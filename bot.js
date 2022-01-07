@@ -1,24 +1,33 @@
-import ethers from 'ethers';
-import express from 'express';
-import chalk from 'chalk';
-import dotenv from 'dotenv';
-import inquirer from 'inquirer';
+#!/usr/bin/env node
 
+
+var ethers = require ('ethers');
+var  express = require('express');
+var  chalk = require('chalk');
+var  dotenv =require ('dotenv');
+var inquirer = require ('inquirer');
+
+const { program } = require('commander');
+program
+  .option('-t, --token <address>', 'token address ')
+  .option('-a, --amount <amount>', 'amount to buy in bnb')
+program.parse(process.argv);
+const argv = program.opts();
 const app = express();
 dotenv.config();
 
 const data = {
   BNB: process.env.BNB_CONTRACT, //bnb
 
-  to_PURCHASE: process.env.TO_PURCHASE, // token that you will purchase = BUSD for test '0xe9e7cea3dedca5984780bafc599bd69add087d56'
+  TOKEN: process.env.TOKEN, // token that you will purchase = BUSD for test '0xe9e7cea3dedca5984780bafc599bd69add087d56'
 
-  AMOUNT_OF_BNB : process.env.AMOUNT_OF_BNB, // how much you want to buy in BNB
+  AMOUNT: process.env.AMOUNT, // how much you want to buy in BNB
 
   factory: process.env.FACTORY,  //PancakeSwap V2 factory
 
   router: process.env.ROUTER, //PancakeSwap V2 router
 
-  recipient: process.env.YOUR_ADDRESS, //your wallet address,
+  recipient: process.env.ADDRESS, //your wallet address,
 
   Slippage : process.env.SLIPPAGE, //in Percentage
 
@@ -33,9 +42,16 @@ let initialLiquidityDetected = false;
 let jmlBnb = 0;
 
 const wss = process.env.WSS_NODE;
-const mnemonic = process.env.YOUR_MNEMONIC //your memonic;
-const tokenIn = data.BNB;
-const tokenOut = data.to_PURCHASE;
+const mnemonic = process.env.MNEMONIC //your memonic;
+if (argv['mnemonic']!== undefined) mnemonic=argv['mnemonic'];
+
+var tokenIn = data.BNB;
+var  tokenOut= data.TOKEN;
+if (argv['token']!== undefined)  tokenOut=String(argv['token']);
+
+var amount =data.AMOUNT;
+if (argv['amount']!== undefined)  amount=argv['amount'];
+
 // const provider = new ethers.providers.JsonRpcProvider(bscMainnetUrl)
 const provider = new ethers.providers.WebSocketProvider(wss);
 const wallet = ethers.Wallet.fromMnemonic(mnemonic);
@@ -109,7 +125,7 @@ const run = async () => {
 
       let amountOutMin = 0;
       //We buy x amount of the new token for our bnb
-      const amountIn = ethers.utils.parseUnits(`${data.AMOUNT_OF_BNB}`, 'ether');
+      const amountIn = ethers.utils.parseUnits(`${amount}`, 'ether');
       if ( parseInt(data.Slippage) !== 0 ){
         const amounts = await router.getAmountsOut(amountIn, [tokenIn, tokenOut]);
         //Our execution price will be a bit different, we need some flexibility
@@ -187,4 +203,4 @@ run();
 
 const PORT = 5001;
 
-app.listen(PORT, console.log(chalk.yellow(`Listening for Liquidity Addition to token ${data.to_PURCHASE}`)));
+app.listen(PORT, console.log(chalk.yellow(`Listening for Liquidity Addition to token ${tokenOut}`)));
